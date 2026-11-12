@@ -1,4 +1,5 @@
 from alembic import context
+from demo_fastapi import models  # noqa: F401
 from demo_fastapi.database import Base, engine
 
 config = context.config
