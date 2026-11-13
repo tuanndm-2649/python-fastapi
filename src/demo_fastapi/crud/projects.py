@@ -1,5 +1,7 @@
 """Database operations for projects."""
 
+from uuid import UUID
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -15,3 +17,10 @@ def get_projects(
     statement = select(Project).order_by(Project.id)
 
     return paginate(db, statement, pagination, PageResponse[ProjectResponse])
+
+
+def get_project(
+    db: Session,
+    project_id: UUID,
+) -> Project | None:
+    return db.get(Project, project_id)
