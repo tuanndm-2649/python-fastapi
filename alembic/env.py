@@ -1,6 +1,6 @@
 from alembic import context
-from demo_fastapi import models  # noqa: F401
-from demo_fastapi.database import Base, engine
+from demo_fastapi.database import engine
+from demo_fastapi.models import Base
 
 config = context.config
 target_metadata = Base.metadata

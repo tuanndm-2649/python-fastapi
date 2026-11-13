@@ -9,6 +9,7 @@ class TaskResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
+    title: str
     description: str | None
     status: str
     project_id: UUID

@@ -1,14 +1,15 @@
 from sqlalchemy import Select, func, select
 from sqlalchemy.orm import Session
 
-from demo_fastapi.models.pagination import PaginationParams
+from demo_fastapi.schemas.pagination import PageResponse, PaginationParams
 
 
-def paginate[T](
+def paginate[T, S](
     db: Session,
     statement: Select[T],
     pagination: PaginationParams,
-) -> tuple[list[T], int]:
+    response_type: type[PageResponse[S]],
+) -> PageResponse[S]:
     count_statement = select(func.count()).select_from(
         statement.order_by(None).subquery()
     )
@@ -21,4 +22,4 @@ def paginate[T](
 
     items = list(db.scalars(paginated_statement).all())
 
-    return items, total
+    return response_type.from_result(items, total, pagination)
