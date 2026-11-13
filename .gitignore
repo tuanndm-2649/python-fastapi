@@ -11,5 +11,6 @@ wheels/
 
 .venv/
 .env
+.env.test
 *.pyc
 app.db
