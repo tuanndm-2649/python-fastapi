@@ -10,6 +10,7 @@ def seed_users(db_session: Session) -> None:
     for index in range(1, 4):
         user = User(
             id=UUID(int=index),
+            username=f"user{index}",
             name=f"User {index}",
             email=f"user{index}@example.com",
             hashed_password="test-only",
@@ -21,6 +22,7 @@ def seed_users(db_session: Session) -> None:
 
 def seed_projects(db_session: Session) -> None:
     owner = User(
+        username="project_owner",
         name="Project owner",
         email="owner@example.com",
         hashed_password="test-only",
@@ -40,6 +42,7 @@ def seed_projects(db_session: Session) -> None:
 
 def seed_tasks(db_session: Session) -> None:
     owner = User(
+        username="task_owner",
         name="Task owner",
         email="owner@example.com",
         hashed_password="test-only",
