@@ -12,7 +12,7 @@ from demo_fastapi.schemas.tags import TagResponse
 router = APIRouter(prefix="/tags", tags=["tags"])
 
 
-@router.get("", response_model=list[TagResponse], summary="All tag")
+@router.get("", response_model=list[TagResponse], summary="List tag")
 def list_tags(db: Annotated[Session, Depends(get_db)]) -> list[TagResponse]:
     tags = get_tags(db)
 

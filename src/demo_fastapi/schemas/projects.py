@@ -17,14 +17,6 @@ class ProjectBase(BaseModel):
     description: str | None = None
 
 
-class ProjectCreate(ProjectBase):
-    owner_id: UUID
-
-
-class ProjectUpdate(ProjectBase):
-    pass
-
-
 class ProjectResponse(ProjectBase):
     model_config = ConfigDict(from_attributes=True)
 
