@@ -3,11 +3,13 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
+from demo_fastapi.constants.message import PROJECT_NOT_FOUND
 from demo_fastapi.crud.projects import get_project, get_projects
 from demo_fastapi.database import get_db
+from demo_fastapi.exceptions import NotFoundException
 from demo_fastapi.schemas.pagination import PageResponse, PaginationParams
 from demo_fastapi.schemas.projects import ProjectResponse
 
@@ -30,9 +32,5 @@ def retrieve_project(
     project = get_project(db, project_id)
 
     if project is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found",
-        )
-
+        raise NotFoundException(PROJECT_NOT_FOUND)
     return ProjectResponse.model_validate(project)
