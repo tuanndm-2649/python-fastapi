@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from demo_fastapi.common.validators import get_user_profile_or_404
+from demo_fastapi.common.validators import get_user_profile
 from demo_fastapi.crud.users import get_users
 from demo_fastapi.database import get_db
 from demo_fastapi.schemas.pagination import PageResponse, PaginationParams
@@ -30,6 +30,6 @@ def user_profile(
     username: str,
     db: Annotated[Session, Depends(get_db)],
 ) -> UserProfileResponse:
-    user = get_user_profile_or_404(db, username)
+    user = get_user_profile(db, username)
 
     return UserProfileResponse.model_validate(user)

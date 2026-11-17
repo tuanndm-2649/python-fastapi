@@ -42,7 +42,7 @@ def get_tasks_by_project(
 def create_task(
     db: Session, payload: TaskCreate, project_id: UUID, tags: list[Tag]
 ) -> Task:
-    task_data = payload.model_dump(exclude={"tags"})
+    task_data = payload.model_dump(exclude={"tag_ids"})
 
     task = Task(**task_data, project_id=project_id)
     task.tags = tags

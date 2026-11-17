@@ -31,6 +31,5 @@ class TaskCreate(BaseModel):
         min_length=TASK_TITLE_MIN_LENGTH, max_length=TASK_TITLE_MAX_LENGTH
     )
     description: str | None = None
-    status: TaskStatus = TaskStatus.TODO
     assignee_id: UUID | None = None
-    tags: list[UUID] = Field(default_factory=list)
+    tag_ids: list[UUID] = Field(default_factory=list)

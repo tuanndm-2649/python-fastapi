@@ -2,18 +2,19 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from demo_fastapi.common.validators import get_tags_or_404, get_user_or_404
+from demo_fastapi.common.validators import get_task_tags, get_user_detail
+from demo_fastapi.constants.message import PROJECT_NOT_FOUND, RESOURCE_NOT_FOUND
 from demo_fastapi.crud.projects import get_projects
 from demo_fastapi.crud.tasks import create_task, get_tasks_by_project
 from demo_fastapi.database import get_db
-from demo_fastapi.dependencies.projects import get_project_or_404
+from demo_fastapi.dependencies.projects import get_project_detail
 from demo_fastapi.models import Project, Task
 from demo_fastapi.schemas.pagination import PageResponse, PaginationParams
 from demo_fastapi.schemas.projects import ProjectResponse
-from demo_fastapi.schemas.responses import ProjectWithTasksResponse
+from demo_fastapi.schemas.responses import ProjectWithTasksResponse, not_found_response
 from demo_fastapi.schemas.tasks import TaskCreate, TaskResponse
 
 router = APIRouter(prefix="/projects", tags=["projects"])
@@ -27,9 +28,14 @@ def list_projects(
     return get_projects(db, pagination)
 
 
-@router.get("/{project_id}", response_model=ProjectResponse, summary="Project detail")
+@router.get(
+    "/{project_id}",
+    response_model=ProjectResponse,
+    summary="Project detail",
+    responses=not_found_response(PROJECT_NOT_FOUND),
+)
 def retrieve_project(
-    project: Annotated[Project, Depends(get_project_or_404)],
+    project: Annotated[Project, Depends(get_project_detail)],
 ) -> ProjectResponse:
     return ProjectResponse.model_validate(project)
 
@@ -38,9 +44,10 @@ def retrieve_project(
     "/{project_id}/tasks",
     response_model=ProjectWithTasksResponse,
     summary="Tasks by project",
+    responses=not_found_response(PROJECT_NOT_FOUND),
 )
 def get_project_with_tasks(
-    project: Annotated[Project, Depends(get_project_or_404)],
+    project: Annotated[Project, Depends(get_project_detail)],
     db: Annotated[Session, Depends(get_db)],
     pagination: Annotated[PaginationParams, Query()],
 ) -> ProjectWithTasksResponse:
@@ -51,16 +58,20 @@ def get_project_with_tasks(
 
 
 @router.post(
-    "/{project_id}/tasks", response_model=TaskResponse, summary="Create task project"
+    "/{project_id}/tasks",
+    response_model=TaskResponse,
+    summary="Create task project",
+    status_code=status.HTTP_201_CREATED,
+    responses=not_found_response(RESOURCE_NOT_FOUND),
 )
 def create_project_task(
-    project: Annotated[Project, Depends(get_project_or_404)],
+    project: Annotated[Project, Depends(get_project_detail)],
     db: Annotated[Session, Depends(get_db)],
     payload: TaskCreate,
 ) -> Task:
     if payload.assignee_id is not None:
-        get_user_or_404(db, payload.assignee_id)
+        get_user_detail(db, payload.assignee_id)
 
-    tags = get_tags_or_404(db, payload.tags)
+    tags = get_task_tags(db, payload.tag_ids)
 
     return create_task(db, payload, project.id, tags)
