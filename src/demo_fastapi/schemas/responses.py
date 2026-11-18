@@ -28,10 +28,14 @@ class ErrorResponse(BaseModel):
     detail: str
 
 
-def not_found_response(message: str) -> dict[int | str, dict[str, Any]]:
+def error_response(status_code: int, message: str) -> dict[int | str, dict[str, Any]]:
     return {
-        status.HTTP_404_NOT_FOUND: {
+        status_code: {
             "model": ErrorResponse,
             "description": message,
-        }
+        },
     }
+
+
+def not_found_response(message: str) -> dict[int | str, dict[str, Any]]:
+    return error_response(status.HTTP_404_NOT_FOUND, message)
