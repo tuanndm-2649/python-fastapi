@@ -21,6 +21,7 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(100))
     email: Mapped[str] = mapped_column(String(255), unique=True)
     hashed_password: Mapped[str] = mapped_column(String(255))
+    username: Mapped[str] = mapped_column(String(55), unique=True)
 
     projects: Mapped[list[Project]] = relationship(
         back_populates="owner",
