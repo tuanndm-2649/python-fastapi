@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from demo_fastapi.constants.task import (
     TASK_TITLE_MAX_LENGTH,
     TASK_TITLE_MIN_LENGTH,
+    TaskPriority,
     TaskStatus,
 )
 from demo_fastapi.schemas.projects import ProjectResponse
@@ -21,6 +22,7 @@ class TaskResponse(BaseModel):
     title: str
     description: str | None
     status: TaskStatus
+    priority: TaskPriority
     project: ProjectResponse
     assignee: UserResponse | None
     tags: list[TagResponse]
@@ -33,3 +35,4 @@ class TaskCreate(BaseModel):
     description: str | None = None
     assignee_id: UUID | None = None
     tag_ids: list[UUID] = Field(default_factory=list)
+    priority: TaskPriority = TaskPriority.NORMAL

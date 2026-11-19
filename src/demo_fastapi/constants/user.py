@@ -1,3 +1,11 @@
+from enum import StrEnum
+
+
+class UserRole(StrEnum):
+    USER = "user"
+    ADMIN = "admin"
+
+
 USERNAME_MIN_LENGTH = 1
 USERNAME_MAX_LENGTH = 55
 NAME_MIN_LENGTH = 1
