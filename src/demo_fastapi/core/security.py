@@ -19,10 +19,13 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(password: str, hashed_password: str) -> bool:
-    return bcrypt.checkpw(
-        password.encode(PASSWORD_ENCODE_TYPE),
-        hashed_password.encode(PASSWORD_ENCODE_TYPE),
-    )
+    try:
+        return bcrypt.checkpw(
+            password.encode(PASSWORD_ENCODE_TYPE),
+            hashed_password.encode(PASSWORD_ENCODE_TYPE),
+        )
+    except ValueError:
+        return False
 
 
 def create_access_token(user_id: UUID) -> str:
@@ -35,6 +38,14 @@ def create_access_token(user_id: UUID) -> str:
 def decode_access_token(token: str) -> UUID | None:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return UUID(payload["sub"])
     except jwt.InvalidTokenError:
+        return None
+
+    sub = payload.get("sub")
+    if sub is None:
+        return None
+
+    try:
+        return UUID(sub)
+    except ValueError:
         return None

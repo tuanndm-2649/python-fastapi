@@ -3,19 +3,28 @@
 from uuid import UUID
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
 from demo_fastapi.core.security import hash_password
 from demo_fastapi.crud.pagination import paginate
 from demo_fastapi.models import User
 from demo_fastapi.schemas.pagination import PageResponse, PaginationParams
-from demo_fastapi.schemas.users import UserRegister, UserResponse, UserUpdate
+from demo_fastapi.schemas.users import (
+    UserPublicResponse,
+    UserRegister,
+    UserUpdate,
+)
 
 
-def get_users(db: Session, pagination: PaginationParams) -> PageResponse[UserResponse]:
+def get_users(
+    db: Session, pagination: PaginationParams
+) -> PageResponse[UserPublicResponse]:
     statement = select(User).order_by(User.id)
 
-    return paginate(db, statement, pagination, response_type=PageResponse[UserResponse])
+    return paginate(
+        db, statement, pagination, response_type=PageResponse[UserPublicResponse]
+    )
 
 
 def retrieve_user(db: Session, user_id: UUID) -> User | None:
@@ -58,7 +67,13 @@ def create_user(db: Session, payload: UserRegister) -> User:
     )
 
     db.add(user)
-    db.commit()
+
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise
+
     db.refresh(user)
 
     return user
