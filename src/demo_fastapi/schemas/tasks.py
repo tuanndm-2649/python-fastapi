@@ -11,7 +11,7 @@ from demo_fastapi.constants.task import (
 )
 from demo_fastapi.schemas.projects import ProjectResponse
 from demo_fastapi.schemas.tags import TagResponse
-from demo_fastapi.schemas.users import UserResponse
+from demo_fastapi.schemas.users import UserPublicResponse
 
 
 class TaskResponse(BaseModel):
@@ -22,7 +22,7 @@ class TaskResponse(BaseModel):
     description: str | None
     status: TaskStatus
     project: ProjectResponse
-    assignee: UserResponse | None
+    assignee: UserPublicResponse | None
     tags: list[TagResponse]
 
 

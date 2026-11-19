@@ -1,10 +1,11 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, Query, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from demo_fastapi.common.validators import get_user_profile
-from demo_fastapi.constants.auth import PASSWORD_MAX_LENGTH, PASSWORD_PATTERN
+from demo_fastapi.constants.auth import PASSWORD_MAX_LENGTH
 from demo_fastapi.constants.message import (
     EMAIL_ALREADY_EXISTS,
     EMAIL_OR_USERNAME_ALREADY_EXISTS,
@@ -32,16 +33,23 @@ from demo_fastapi.schemas.responses import (
     error_response,
     not_found_response,
 )
-from demo_fastapi.schemas.users import UserRegister, UserResponse, UserUpdate
+from demo_fastapi.schemas.users import (
+    UserPublicResponse,
+    UserRegister,
+    UserResponse,
+    UserUpdate,
+)
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.get("", response_model=PageResponse[UserResponse], summary="Get list users")
+@router.get(
+    "", response_model=PageResponse[UserPublicResponse], summary="Get list users"
+)
 def list_users(
     db: Annotated[Session, Depends(get_db)],
     pagination: Annotated[PaginationParams, Query()],
-) -> PageResponse[UserResponse]:
+) -> PageResponse[UserPublicResponse]:
     return get_users(db, pagination)
 
 
@@ -78,7 +86,10 @@ def user_register(
     if get_user_by_username(db, payload.username) is not None:
         raise ConflictException(USERNAME_ALREADY_EXISTS)
 
-    return create_user(db, payload)
+    try:
+        return create_user(db, payload)
+    except IntegrityError:
+        raise ConflictException(EMAIL_OR_USERNAME_ALREADY_EXISTS)
 
 
 @router.post(
@@ -89,9 +100,7 @@ def user_register(
 )
 def login(
     username: Annotated[str, Form()],
-    password: Annotated[
-        str, Form(max_length=PASSWORD_MAX_LENGTH, pattern=PASSWORD_PATTERN)
-    ],
+    password: Annotated[str, Form(max_length=PASSWORD_MAX_LENGTH)],
     db: Annotated[Session, Depends(get_db)],
 ) -> Token:
     user = get_user_by_username(db, username)

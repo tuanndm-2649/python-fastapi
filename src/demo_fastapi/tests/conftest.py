@@ -34,6 +34,7 @@ if url.get_backend_name() != "postgresql" or not (
     raise pytest.UsageError("Have to use _test database")
 
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
+os.environ["SECRET_KEY"] = "test-secret-key-for-pytest-only-32chars"
 
 
 @pytest.fixture(scope="session")
