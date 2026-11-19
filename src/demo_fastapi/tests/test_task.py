@@ -1,7 +1,6 @@
 from uuid import UUID
 
 from fastapi.testclient import TestClient
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from demo_fastapi.constants.message import (
@@ -10,9 +9,9 @@ from demo_fastapi.constants.message import (
     USER_INACTIVE,
 )
 from demo_fastapi.constants.task import TaskPriority, TaskStatus
-from demo_fastapi.models import Task, User
+from demo_fastapi.models import Task
 from demo_fastapi.tests.test_project import UNKNOWN_ID, seed_project
-from demo_fastapi.tests.test_users import USER_NAME, get_auth_headers
+from demo_fastapi.tests.test_users import USER_NAME, deactivate_user, get_auth_headers
 
 TASK_ID = UUID(int=10)
 
@@ -127,9 +126,7 @@ def test_bookmark_task_with_inactive_user_returns_403(
     seed_tasks(db_session)
 
     headers = get_auth_headers(client)
-    user = db_session.scalars(select(User).where(User.username == USER_NAME)).one()
-    user.is_active = False
-    db_session.commit()
+    deactivate_user(db_session, USER_NAME)
 
     response = client.post(f"/api/tasks/{TASK_ID}/bookmark", headers=headers)
 
