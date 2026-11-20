@@ -3,6 +3,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from demo_fastapi.constants.message import (
@@ -29,10 +30,10 @@ router = APIRouter(prefix="/tasks", tags=["tasks"])
 def list_tasks(
     db: Annotated[Session, Depends(get_db)],
     pagination: Annotated[PaginationParams, Query()],
-    status: TaskStatus | None = None,
-    priority: TaskPriority | None = None,
+    task_status: Annotated[TaskStatus | None, Query(alias="status")] = None,
+    priority: Annotated[TaskPriority | None, Query()] = None,
 ) -> PageResponse[TaskResponse]:
-    return get_tasks(db, pagination, status, priority)
+    return get_tasks(db, pagination, task_status, priority)
 
 
 @router.post(
@@ -52,8 +53,7 @@ def bookmark_task(
     task: Annotated[Task, Depends(get_task_detail)],
     user: Annotated[User, Depends(get_current_active_user)],
 ) -> Task:
-
-    if task in user.bookmarked_tasks:
+    try:
+        return create_task_bookmark(db, user, task)
+    except IntegrityError:
         raise ConflictException(ERROR_TASK_BOOKMARKED)
-
-    return create_task_bookmark(db, user, task)

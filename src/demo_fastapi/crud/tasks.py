@@ -2,13 +2,14 @@
 
 from uuid import UUID
 
-from sqlalchemy import select
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import insert, select
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from demo_fastapi.constants.task import TaskPriority, TaskStatus
 from demo_fastapi.crud.pagination import paginate
 from demo_fastapi.models import Tag, Task, User
+from demo_fastapi.models.associations import task_bookmarks
 from demo_fastapi.schemas.pagination import PageResponse, PaginationParams
 from demo_fastapi.schemas.tasks import TaskCreate, TaskResponse
 
@@ -73,8 +74,13 @@ def create_task(
 
 
 def create_task_bookmark(db: Session, user: User, task: Task) -> Task:
-    user.bookmarked_tasks.append(task)
-    db.commit()
+    try:
+        db.execute(insert(task_bookmarks).values(user_id=user.id, task_id=task.id))
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise
+
     db.refresh(task)
 
     return task

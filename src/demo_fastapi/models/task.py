@@ -6,6 +6,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import CheckConstraint, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from demo_fastapi.common.utils import enum_check
 from demo_fastapi.constants.task import TaskPriority, TaskStatus
 from demo_fastapi.database import Base
 from demo_fastapi.models.associations import task_tags
@@ -20,12 +21,8 @@ if TYPE_CHECKING:
 class Task(Base):
     __tablename__ = "tasks"
     __table_args__ = (
-        CheckConstraint(
-            "status IN ('todo', 'in_progress', 'done')", name="ck_tasks_status"
-        ),
-        CheckConstraint(
-            "priority IN ('low', 'normal', 'high')", name="ck_tasks_priority"
-        ),
+        CheckConstraint(enum_check("status", TaskStatus), name="ck_tasks_status"),
+        CheckConstraint(enum_check("priority", TaskPriority), name="ck_tasks_priority"),
     )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)

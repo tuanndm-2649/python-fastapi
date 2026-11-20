@@ -24,7 +24,7 @@ from demo_fastapi.crud.users import (
     update_user,
 )
 from demo_fastapi.database import get_db
-from demo_fastapi.dependencies.auth import get_current_user, get_current_active_user
+from demo_fastapi.dependencies.auth import get_current_active_user
 from demo_fastapi.exceptions import (
     ConflictException,
     ForbiddenException,

@@ -6,15 +6,27 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from demo_fastapi.common.validators import get_task_tags, get_user_detail
-from demo_fastapi.constants.message import PROJECT_NOT_FOUND, RESOURCE_NOT_FOUND
+from demo_fastapi.constants.message import (
+    INVALID_TOKEN,
+    NOT_PROJECT_MANAGER,
+    PROJECT_NOT_FOUND,
+    RESOURCE_NOT_FOUND,
+)
 from demo_fastapi.crud.projects import get_projects
 from demo_fastapi.crud.tasks import create_task, get_tasks_by_project
 from demo_fastapi.database import get_db
-from demo_fastapi.dependencies.projects import get_project_detail
+from demo_fastapi.dependencies.projects import (
+    get_project_detail,
+    verify_project_manager,
+)
 from demo_fastapi.models import Project, Task
 from demo_fastapi.schemas.pagination import PageResponse, PaginationParams
 from demo_fastapi.schemas.projects import ProjectResponse
-from demo_fastapi.schemas.responses import ProjectWithTasksResponse, not_found_response
+from demo_fastapi.schemas.responses import (
+    ProjectWithTasksResponse,
+    error_response,
+    not_found_response,
+)
 from demo_fastapi.schemas.tasks import TaskCreate, TaskResponse
 
 router = APIRouter(prefix="/projects", tags=["projects"])
@@ -62,10 +74,14 @@ def get_project_with_tasks(
     response_model=TaskResponse,
     summary="Create task project",
     status_code=status.HTTP_201_CREATED,
-    responses=not_found_response(RESOURCE_NOT_FOUND),
+    responses={
+        **not_found_response(RESOURCE_NOT_FOUND),
+        **error_response(status.HTTP_401_UNAUTHORIZED, INVALID_TOKEN),
+        **error_response(status.HTTP_403_FORBIDDEN, NOT_PROJECT_MANAGER),
+    },
 )
 def create_project_task(
-    project: Annotated[Project, Depends(get_project_detail)],
+    project: Annotated[Project, Depends(verify_project_manager)],
     db: Annotated[Session, Depends(get_db)],
     payload: TaskCreate,
 ) -> Task:

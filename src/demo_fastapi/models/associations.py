@@ -34,5 +34,6 @@ task_bookmarks = Table(
         Uuid(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         primary_key=True,
+        index=True,
     ),
 )

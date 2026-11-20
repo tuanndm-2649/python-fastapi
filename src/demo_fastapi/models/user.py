@@ -6,6 +6,7 @@ from uuid import UUID, uuid4
 from sqlalchemy import CheckConstraint, String, true
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from demo_fastapi.common.utils import enum_check
 from demo_fastapi.constants.user import UserRole
 from demo_fastapi.database import Base
 from demo_fastapi.models.associations import task_bookmarks
@@ -19,7 +20,7 @@ if TYPE_CHECKING:
 class User(Base):
     __tablename__ = "users"
     __table_args__ = (
-        CheckConstraint("role in ('user', 'admin')", name="ck_users_role"),
+        CheckConstraint(enum_check("role", UserRole), name="ck_users_role"),
     )
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
