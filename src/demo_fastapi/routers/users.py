@@ -11,6 +11,7 @@ from demo_fastapi.constants.message import (
     EMAIL_OR_USERNAME_ALREADY_EXISTS,
     INVALID_CREDENTIALS,
     INVALID_TOKEN,
+    USER_INACTIVE,
     USER_NOT_FOUND,
     USERNAME_ALREADY_EXISTS,
 )
@@ -23,8 +24,12 @@ from demo_fastapi.crud.users import (
     update_user,
 )
 from demo_fastapi.database import get_db
-from demo_fastapi.dependencies.auth import get_current_user
-from demo_fastapi.exceptions import ConflictException, UnauthorizedException
+from demo_fastapi.dependencies.auth import get_current_active_user
+from demo_fastapi.exceptions import (
+    ConflictException,
+    ForbiddenException,
+    UnauthorizedException,
+)
 from demo_fastapi.models import User
 from demo_fastapi.schemas.auth import Token
 from demo_fastapi.schemas.pagination import PageResponse, PaginationParams
@@ -96,7 +101,10 @@ def user_register(
     "/login",
     response_model=Token,
     summary="Login",
-    responses=error_response(status.HTTP_401_UNAUTHORIZED, INVALID_CREDENTIALS),
+    responses={
+        **error_response(status.HTTP_401_UNAUTHORIZED, INVALID_CREDENTIALS),
+        **error_response(status.HTTP_403_FORBIDDEN, USER_INACTIVE),
+    },
 )
 def login(
     username: Annotated[str, Form()],
@@ -108,6 +116,9 @@ def login(
     if user is None or not verify_password(password, user.hashed_password):
         raise UnauthorizedException(INVALID_CREDENTIALS)
 
+    if not user.is_active:
+        raise ForbiddenException(USER_INACTIVE)
+
     return Token(access_token=create_access_token(user.id))
 
 
@@ -115,9 +126,12 @@ def login(
     "/me",
     response_model=UserResponse,
     summary="Current user",
-    responses=error_response(status.HTTP_401_UNAUTHORIZED, INVALID_TOKEN),
+    responses={
+        **error_response(status.HTTP_401_UNAUTHORIZED, INVALID_TOKEN),
+        **error_response(status.HTTP_403_FORBIDDEN, USER_INACTIVE),
+    },
 )
-def get_me(current_user: Annotated[User, Depends(get_current_user)]) -> User:
+def get_me(current_user: Annotated[User, Depends(get_current_active_user)]) -> User:
     return current_user
 
 
@@ -125,11 +139,14 @@ def get_me(current_user: Annotated[User, Depends(get_current_user)]) -> User:
     "/me",
     response_model=UserResponse,
     summary="Update current user",
-    responses=error_response(status.HTTP_401_UNAUTHORIZED, INVALID_TOKEN),
+    responses={
+        **error_response(status.HTTP_401_UNAUTHORIZED, INVALID_TOKEN),
+        **error_response(status.HTTP_403_FORBIDDEN, USER_INACTIVE),
+    },
 )
 def update_me(
     payload: UserUpdate,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(get_current_active_user)],
     db: Annotated[Session, Depends(get_db)],
 ) -> User:
     return update_user(db, current_user, payload)

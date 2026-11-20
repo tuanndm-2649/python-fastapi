@@ -2,28 +2,43 @@
 
 from uuid import UUID
 
-from sqlalchemy import select
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import insert, select
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+from demo_fastapi.constants.task import TaskPriority, TaskStatus
 from demo_fastapi.crud.pagination import paginate
-from demo_fastapi.models import Tag, Task
+from demo_fastapi.models import Tag, Task, User
+from demo_fastapi.models.associations import task_bookmarks
 from demo_fastapi.schemas.pagination import PageResponse, PaginationParams
 from demo_fastapi.schemas.tasks import TaskCreate, TaskResponse
 
 
-def get_tasks(db: Session, pagination: PaginationParams) -> PageResponse[TaskResponse]:
-    statement = (
-        select(Task)
-        .options(
-            joinedload(Task.project),
-            joinedload(Task.assignee),
-            selectinload(Task.tags),
-        )
-        .order_by(Task.id)
+def get_tasks(
+    db: Session,
+    pagination: PaginationParams,
+    status: TaskStatus | None,
+    priority: TaskPriority | None,
+) -> PageResponse[TaskResponse]:
+    statement = select(Task).options(
+        joinedload(Task.project),
+        joinedload(Task.assignee),
+        selectinload(Task.tags),
     )
 
+    if status is not None:
+        statement = statement.where(Task.status == status)
+
+    if priority is not None:
+        statement = statement.where(Task.priority == priority)
+
+    statement = statement.order_by(Task.id)
+
     return paginate(db, statement, pagination, response_type=PageResponse[TaskResponse])
+
+
+def get_task(db: Session, task_id: UUID) -> Task | None:
+    return db.get(Task, task_id)
 
 
 def get_tasks_by_project(
@@ -55,4 +70,17 @@ def create_task(
         raise
 
     db.refresh(task)
+    return task
+
+
+def create_task_bookmark(db: Session, user: User, task: Task) -> Task:
+    try:
+        db.execute(insert(task_bookmarks).values(user_id=user.id, task_id=task.id))
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise
+
+    db.refresh(task)
+
     return task

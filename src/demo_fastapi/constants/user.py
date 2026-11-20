@@ -1,3 +1,11 @@
+from enum import StrEnum
+
+
+class UserRole(StrEnum):
+    USER = "user"
+    ADMIN = "admin"
+
+
 USERNAME_PATTERN = r"^[a-z0-9_]+$"
 
 USERNAME_MIN_LENGTH = 1

@@ -4,6 +4,7 @@ from uuid import uuid4
 import jwt
 from fastapi.testclient import TestClient
 from httpx import Response
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from demo_fastapi.constants.auth import ALGORITHM
@@ -11,6 +12,7 @@ from demo_fastapi.constants.message import (
     EMAIL_ALREADY_EXISTS,
     INVALID_CREDENTIALS,
     INVALID_TOKEN,
+    USER_INACTIVE,
     USER_NOT_FOUND,
     USERNAME_ALREADY_EXISTS,
 )
@@ -54,6 +56,12 @@ def make_auth_headers(payload: dict) -> dict[str, str]:
     token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
     return {"Authorization": f"Bearer {token}"}
+
+
+def deactivate_user(db_session: Session, username: str) -> None:
+    user = db_session.scalars(select(User).where(User.username == username)).one()
+    user.is_active = False
+    db_session.commit()
 
 
 def test_user_profile_returns_200_without_email(
@@ -176,6 +184,21 @@ def test_login_password_with_accents_returns_401(client: TestClient) -> None:
     assert response.status_code == 401
 
 
+def test_login_inactive_user_return_403(
+    client: TestClient, db_session: Session
+) -> None:
+    register_user(client)
+
+    deactivate_user(db_session, USER_NAME)
+
+    response = client.post(
+        "/api/users/login", data={"username": USER_NAME, "password": PASSWORD}
+    )
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == USER_INACTIVE
+
+
 def test_get_me_returns_current_user(client: TestClient) -> None:
     headers = get_auth_headers(client)
 
@@ -183,6 +206,19 @@ def test_get_me_returns_current_user(client: TestClient) -> None:
 
     assert response.status_code == 200
     assert response.json()["email"] == EMAIL
+
+
+def test_get_me_with_inactive_user_return_403(
+    client: TestClient, db_session: Session
+) -> None:
+    headers = get_auth_headers(client)
+
+    deactivate_user(db_session, USER_NAME)
+
+    response = client.get("/api/users/me", headers=headers)
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == USER_INACTIVE
 
 
 def test_get_me_without_token_returns_401(client: TestClient) -> None:
@@ -205,6 +241,19 @@ def test_update_me_returns_updated_user(client: TestClient) -> None:
 
     assert response.status_code == 200
     assert response.json()["name"] == "New name"
+
+
+def test_update_me_with_inactive_user_return_403(
+    client: TestClient, db_session: Session
+) -> None:
+    headers = get_auth_headers(client)
+
+    deactivate_user(db_session, USER_NAME)
+
+    response = client.put("/api/users/me", json={"name": "New name"}, headers=headers)
+
+    assert response.status_code == 403
+    assert response.json()["detail"] == USER_INACTIVE
 
 
 def test_get_me_expired_token_returns_401(client: TestClient) -> None:
