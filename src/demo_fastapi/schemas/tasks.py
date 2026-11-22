@@ -36,3 +36,7 @@ class TaskCreate(BaseModel):
     assignee_id: UUID | None = None
     tag_ids: list[UUID] = Field(default_factory=list)
     priority: TaskPriority = TaskPriority.NORMAL
+
+
+class TaskAssign(BaseModel):
+    assignee_id: UUID

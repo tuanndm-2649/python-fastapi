@@ -16,6 +16,7 @@ from demo_fastapi.constants.message import (
     USER_NOT_FOUND,
     USERNAME_ALREADY_EXISTS,
 )
+from demo_fastapi.constants.user import UserRole
 from demo_fastapi.core.config import SECRET_KEY
 from demo_fastapi.models import Project, User
 
@@ -62,6 +63,31 @@ def deactivate_user(db_session: Session, username: str) -> None:
     user = db_session.scalars(select(User).where(User.username == username)).one()
     user.is_active = False
     db_session.commit()
+
+
+def make_admin(db_session: Session, username: str) -> None:
+    user = db_session.scalars(select(User).where(User.username == username)).one()
+    user.role = UserRole.ADMIN
+    db_session.commit()
+
+
+def seed_user(db_session: Session, username: str) -> User:
+    user = User(
+        name=username,
+        username=username,
+        email=f"{username}@example.com",
+        hashed_password="test-only",
+    )
+    db_session.add(user)
+    db_session.commit()
+
+    return user
+
+
+def sign_token_for_user(user: User) -> dict[str, str]:
+    return make_auth_headers(
+        {"sub": str(user.id), "exp": datetime.now(UTC) + timedelta(minutes=5)}
+    )
 
 
 def test_user_profile_returns_200_without_email(
