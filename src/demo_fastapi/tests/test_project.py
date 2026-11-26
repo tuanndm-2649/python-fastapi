@@ -13,8 +13,10 @@ from demo_fastapi.constants.message import (
 )
 from demo_fastapi.models import Project, Tag, Task, User
 from demo_fastapi.tests.test_users import (
+    USER_NAME,
     deactivate_user,
     get_auth_headers,
+    make_admin,
     make_auth_headers,
 )
 
@@ -217,6 +219,21 @@ def test_create_task_not_owner_returns_403(
 
     assert response.status_code == 403
     assert response.json()["detail"] == NOT_PROJECT_MANAGER
+
+
+def test_create_task_by_admin_returns_201(
+    client: TestClient, db_session: Session
+) -> None:
+    seed_project(db_session)
+    headers = get_auth_headers(client)
+    make_admin(db_session, USER_NAME)
+
+    response = client.post(
+        f"/api/projects/{PROJECT_ID}/tasks", json={"title": "Task 1"}, headers=headers
+    )
+
+    assert response.status_code == 201
+    assert response.json()["title"] == "Task 1"
 
 
 def test_create_task_inactive_owner_returns_403(

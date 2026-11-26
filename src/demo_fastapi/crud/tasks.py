@@ -84,3 +84,17 @@ def create_task_bookmark(db: Session, user: User, task: Task) -> Task:
     db.refresh(task)
 
     return task
+
+
+def assign_task(db: Session, task: Task, assignee: User) -> Task:
+    task.assignee = assignee
+
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        raise
+
+    db.refresh(task)
+
+    return task
