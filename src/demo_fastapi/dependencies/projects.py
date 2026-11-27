@@ -6,8 +6,8 @@ from uuid import UUID
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
+from demo_fastapi.common.permissions import is_admin_or_owner
 from demo_fastapi.constants.message import NOT_PROJECT_MANAGER, PROJECT_NOT_FOUND
-from demo_fastapi.constants.user import UserRole
 from demo_fastapi.crud.projects import get_project
 from demo_fastapi.database import get_db
 from demo_fastapi.dependencies.auth import get_current_active_user
@@ -31,7 +31,7 @@ def verify_project_manager(
     user: Annotated[User, Depends(get_current_active_user)],
     project: Annotated[Project, Depends(get_project_detail)],
 ) -> Project:
-    if user.id != project.owner_id and user.role != UserRole.ADMIN:
+    if not is_admin_or_owner(user, project.owner_id):
         raise ForbiddenException(NOT_PROJECT_MANAGER)
 
     return project

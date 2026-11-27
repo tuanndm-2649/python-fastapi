@@ -7,10 +7,8 @@ from sqlalchemy.orm import Session
 from demo_fastapi.constants.auth import TOKEN_URL
 from demo_fastapi.constants.message import (
     INVALID_TOKEN,
-    PERMISSION_DENIED,
     USER_INACTIVE,
 )
-from demo_fastapi.constants.user import UserRole
 from demo_fastapi.core.security import decode_access_token
 from demo_fastapi.crud.users import retrieve_user
 from demo_fastapi.database import get_db
@@ -40,12 +38,5 @@ def get_current_user(
 def get_current_active_user(user: Annotated[User, Depends(get_current_user)]) -> User:
     if not user.is_active:
         raise ForbiddenException(USER_INACTIVE)
-
-    return user
-
-
-def verify_admin_role(user: Annotated[User, Depends(get_current_active_user)]) -> User:
-    if user.role != UserRole.ADMIN:
-        raise ForbiddenException(PERMISSION_DENIED)
 
     return user
