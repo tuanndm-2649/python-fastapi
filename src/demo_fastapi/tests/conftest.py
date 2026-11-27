@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 from alembic.config import Config
@@ -67,8 +68,16 @@ def db_session(test_engine):
 
 
 @pytest.fixture
-def client(db_session):
+def mock_comment_notification(monkeypatch):
+    mock = Mock()
+    monkeypatch.setattr("demo_fastapi.services.email.send_comment_notification", mock)
+    return mock
+
+
+@pytest.fixture
+def client(db_session, mock_comment_notification):
     from demo_fastapi.database import get_db
+    from demo_fastapi.dependencies.cache import get_redis
     from demo_fastapi.main import app
 
     def override_get_db():
@@ -76,6 +85,7 @@ def client(db_session):
 
     previous_overrides = app.dependency_overrides.copy()
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_redis] = lambda: None
 
     try:
         with TestClient(app) as test_client:

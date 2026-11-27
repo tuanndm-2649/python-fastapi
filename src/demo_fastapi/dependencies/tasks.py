@@ -4,8 +4,8 @@ from uuid import UUID
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
+from demo_fastapi.common.permissions import is_admin_or_owner
 from demo_fastapi.constants.message import NOT_PROJECT_MANAGER, TASK_NOT_FOUND
-from demo_fastapi.constants.user import UserRole
 from demo_fastapi.crud.tasks import get_task
 from demo_fastapi.database import get_db
 from demo_fastapi.dependencies.auth import get_current_active_user
@@ -26,7 +26,7 @@ def verify_task_manager(
     user: Annotated[User, Depends(get_current_active_user)],
     task: Annotated[Task, Depends(get_task_detail)],
 ) -> Task:
-    if not (user.role == UserRole.ADMIN or task.project.owner_id == user.id):
+    if not is_admin_or_owner(user, task.project.owner_id):
         raise ForbiddenException(NOT_PROJECT_MANAGER)
 
     return task

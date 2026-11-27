@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -41,6 +41,7 @@ from demo_fastapi.schemas.comments import (
 from demo_fastapi.schemas.pagination import PageResponse, PaginationParams
 from demo_fastapi.schemas.responses import error_response, not_found_response
 from demo_fastapi.schemas.tasks import TaskAssign, TaskResponse
+from demo_fastapi.services import email as email_service
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
@@ -114,12 +115,26 @@ def assign_user_task(
     },
 )
 def comment_on_task(
+    background_tasks: BackgroundTasks,
     db: Annotated[Session, Depends(get_db)],
     user: Annotated[User, Depends(get_current_active_user)],
     task: Annotated[Task, Depends(get_task_detail)],
     payload: CommentCreate,
 ) -> Comment:
-    return create_comment(db, payload, task, user)
+    to_email = task.project.owner.email
+    task_title = task.title
+    author_name = user.name
+
+    comment = create_comment(db, payload, task, user)
+    background_tasks.add_task(
+        email_service.send_comment_notification,
+        to_email=to_email,
+        task_title=task_title,
+        author_name=author_name,
+        content=comment.content,
+    )
+
+    return comment
 
 
 @router.delete(
